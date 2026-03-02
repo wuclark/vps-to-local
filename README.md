@@ -10,9 +10,9 @@ connections itself. Peers are named `remoteXXX` and added on demand.
 1. Order VPS on OVHcloud (US/EU datacenter)
 2. bash scripts/gen-keys.sh        # generate VPS server keypair
 3. Fill <SERVER_PRIVATE_KEY> into vps/wireguard/wg0.conf.template
-4. sudo bash vps/setup.sh          # bootstrap VPS
+4. sudo bash scripts/setup.sh      # interactive wizard — picks WireGuard,
+                                   # Trojan, or Trojan+Cloudflare
 5. bash scripts/add-peer.sh <name> [--public-ip <IP>]  # add peers
-6. sudo bash vps/iptables/rules.sh # apply forwarding rules
 ```
 
 ## Architecture
@@ -55,11 +55,14 @@ bash scripts/add-peer.sh remote002
 In addition to WireGuard, this repo supports **Trojan** as a second proxy option.
 Trojan disguises traffic as normal HTTPS, which works through firewalls that block UDP or WireGuard.
 
+Run `sudo bash scripts/setup.sh` and choose from the menu, or run individual
+scripts directly:
+
 | Option | Command | Use case |
 |--------|---------|----------|
-| **WireGuard only** | `sudo bash vps/setup.sh` | Standard — fastest, lowest overhead |
-| **Trojan (standalone)** | `sudo bash scripts/setup-trojan.sh <domain> <password>` | When WireGuard UDP is blocked; domain points directly to VPS |
-| **Trojan + Cloudflare** | `sudo bash scripts/setup-trojan-cloudflare.sh <domain> <password> <cf-token>` | Hides VPS IP behind Cloudflare CDN; uses WebSocket transport |
+| **WireGuard only** | `sudo bash scripts/setup.sh` → pick 1 | Standard — fastest, lowest overhead |
+| **Trojan (standalone)** | `sudo bash scripts/setup.sh` → pick 2 | When WireGuard UDP is blocked; domain points directly to VPS |
+| **Trojan + Cloudflare** | `sudo bash scripts/setup.sh` → pick 3 | Hides VPS IP behind Cloudflare CDN; uses WebSocket transport |
 
 ### Trojan (standalone)
 
@@ -115,10 +118,11 @@ vps/
 peers/
   <name>/wg0.conf.template      Created by add-peer.sh (none committed by default)
 scripts/
+  setup.sh                            Interactive setup wizard (WireGuard / Trojan / Trojan+CF)
   gen-keys.sh                         Generate VPS server keypair
   add-peer.sh                         Add a vpn-only or public peer
-  setup-trojan.sh                     Install Trojan-go (standalone mode)
-  setup-trojan-cloudflare.sh          Install Trojan-go (Cloudflare CDN + WebSocket mode)
+  setup-trojan.sh                     Install Trojan-go (standalone mode, called by wizard)
+  setup-trojan-cloudflare.sh          Install Trojan-go (Cloudflare CDN + WebSocket, called by wizard)
 ```
 
 See [CLAUDE.md](CLAUDE.md) for AI assistant conventions and development workflow.
