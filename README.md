@@ -7,12 +7,12 @@ connections itself. Peers are named `remoteXXX` for consistency.
 ## Quick Start
 
 ```
-1. Order VPS + Additional IPs on OVHcloud (US/EU datacenter)
-2. bash scripts/gen-keys.sh        # generate keypairs
+1. Order VPS + 1 Additional IP on OVHcloud (US/EU datacenter)
+2. bash scripts/gen-keys.sh        # generate keypairs (VPS + remote001)
 3. Fill in templates under vps/ and peers/
 4. sudo bash vps/setup.sh          # bootstrap VPS
 5. sudo bash vps/iptables/rules.sh # apply forwarding rules
-6. Configure WireGuard on each remote peer (see peers/)
+6. Configure WireGuard on remote001 (see peers/remote001/)
 ```
 
 ## Architecture
@@ -21,23 +21,20 @@ connections itself. Peers are named `remoteXXX` for consistency.
 Internet
     │
     ▼
-OVHcloud VPS
-├── VPS main IP   ──► SSH + WireGuard endpoint  (stays on VPS)
-├── Public IP #1  ──► DNAT ──► remote001  (10.0.0.2)
-└── Public IP #2  ──► DNAT ──► remote002  (10.0.0.3)
+OVHcloud VPS  (~$12/mo to start)
+├── VPS main IP  ──► SSH + WireGuard endpoint  (stays on VPS, included free)
+└── Public IP #1 ──► DNAT ──► remote001  (10.0.0.2)
 ```
 
-**IP count: N remotes require N+1 IPs total.**
-The VPS main IP (included free) handles SSH and WireGuard handshakes.
-Each additional IP (~$2/mo) is DNAT'd entirely to one remote peer.
-DNAT rules match only on their specific additional IP, so the main IP
-is never forwarded and always reachable for administration.
+**Baseline: 2 IPs for 1 remote.** Add more peers with `scripts/add-peer.sh` —
+each needs one additional IP (~$2/mo) if it requires its own public address.
+The VPS main IP is never DNAT'd, so SSH and WireGuard handshakes always reach
+the VPS directly.
 
 ## Adding More Peers
 
 ```bash
-bash scripts/add-peer.sh remote003
-bash scripts/add-peer.sh remote003 --public-ip <PUBLIC_IP_3>
+bash scripts/add-peer.sh remote002 --public-ip <PUBLIC_IP_2>
 ```
 
 ## Security Layers
@@ -59,9 +56,8 @@ vps/
   setup.sh                      Full VPS bootstrap
 peers/
   remote001/wg0.conf.template   WireGuard client (remote001, 10.0.0.2)
-  remote002/wg0.conf.template   WireGuard client (remote002, 10.0.0.3)
 scripts/
-  gen-keys.sh                   Generate WireGuard keypairs
+  gen-keys.sh                   Generate WireGuard keypairs (VPS + remote001)
   add-peer.sh                   Add a new remoteXXX peer
 ```
 

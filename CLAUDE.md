@@ -19,31 +19,31 @@ Internet
     ▼
 OVHcloud VPS
 ├── VPS main IP   ──► SSH (port 22) + WireGuard endpoint (port 51820)
-├── Public IP #1  ──► DNAT ──► remote001  (10.0.0.2)
-└── Public IP #2  ──► DNAT ──► remote002  (10.0.0.3)
+└── Public IP #1  ──► DNAT ──► remote001  (10.0.0.2)
 ```
 
 ### IP Allocation
-**N remotes require N+1 public IPs total.**
+**N remotes require N+1 public IPs total.** The baseline is 2 IPs for 1 remote.
 
 | IP | Role | Cost |
 |----|------|------|
 | VPS main IP | SSH access + WireGuard handshakes — never DNAT'd | included |
 | Additional IP #1 | All traffic forwarded to remote001 | ~$2/mo |
-| Additional IP #2 | All traffic forwarded to remote002 | ~$2/mo |
 
 The DNAT rules in `rules.sh` match only on their specific additional IP
 (`-d "$PUBLIC_IP_1"`), so the VPS main IP passes through the PREROUTING
 chain untouched. SSH and WireGuard handshakes always reach the VPS directly.
+
+Additional peers are added with `scripts/add-peer.sh` — each needs one more
+additional IP if it requires its own public address.
 
 **WireGuard subnet:** `10.0.0.0/24`
 | Host      | WireGuard IP |
 |-----------|-------------|
 | VPS       | 10.0.0.1    |
 | remote001 | 10.0.0.2    |
-| remote002 | 10.0.0.3    |
 
-New peers continue the sequence: `remote003` → `10.0.0.4`, `remote004` → `10.0.0.5`, etc.
+New peers continue the sequence: `remote002` → `10.0.0.3`, `remote003` → `10.0.0.4`, etc.
 
 ---
 
@@ -62,11 +62,9 @@ vps-to-local/
 ├── peers/
 │   ├── remote001/
 │   │   └── wg0.conf.template    # WireGuard client config for remote001
-│   ├── remote002/
-│   │   └── wg0.conf.template    # WireGuard client config for remote002
-│   └── remoteXXX/               # Add more with scripts/add-peer.sh
+│   └── remoteXXX/               # Add more with: bash scripts/add-peer.sh remoteXXX
 └── scripts/
-    ├── gen-keys.sh              # Generate WireGuard keypairs for all nodes
+    ├── gen-keys.sh              # Generate WireGuard keypairs (VPS + remote001)
     └── add-peer.sh              # Add a new remoteXXX peer
 ```
 
@@ -88,15 +86,12 @@ into committed files. Placeholders that appear in this repo:
 |--------------------------|------------------------------------------------|
 | `<VPS_MAIN_IP>`          | VPS primary IP (used as WireGuard endpoint)    |
 | `<PUBLIC_IP_1>`          | Additional OVHcloud IP routed to remote001     |
-| `<PUBLIC_IP_2>`          | Additional OVHcloud IP routed to remote002     |
 | `<SERVER_PRIVATE_KEY>`   | VPS WireGuard private key (never commit)       |
 | `<SERVER_PUBLIC_KEY>`    | VPS WireGuard public key                       |
 | `<REMOTE001_PRIVATE_KEY>`| remote001 WireGuard private key (never commit) |
 | `<REMOTE001_PUBLIC_KEY>` | remote001 WireGuard public key                 |
-| `<REMOTE002_PRIVATE_KEY>`| remote002 WireGuard private key (never commit) |
-| `<REMOTE002_PUBLIC_KEY>` | remote002 WireGuard public key                 |
 
-Additional peers follow the same pattern: `<REMOTE003_PRIVATE_KEY>`, etc.
+Additional peers follow the same pattern: `<REMOTE002_PRIVATE_KEY>`, `<REMOTE002_PUBLIC_KEY>`, etc.
 
 ### Security Rules
 - **Never commit private keys** — they belong in `/etc/wireguard/` on each machine
@@ -176,7 +171,8 @@ bash /tmp/rules.sh
 |---------------------------|---------|
 | OVHcloud VPS-2            | ~$9.99  |
 | Additional IP (remote001) | ~$2.00  |
-| Additional IP (remote002) | ~$2.00  |
-| **Total (2 peers)**       | **~$14**|
+| **Total (1 peer)**        | **~$12**|
+
+Each additional peer costs ~$2/mo more if it needs its own public IP.
 
 > US/EU datacenters only for unlimited bandwidth. Avoid AP datacenters.

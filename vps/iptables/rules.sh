@@ -17,11 +17,9 @@ WG_PORT="51820"
 SSH_PORT="22"
 WG_SUBNET="10.0.0.0/24"
 REMOTE001_WG_IP="10.0.0.2"
-REMOTE002_WG_IP="10.0.0.3"
 
 # Fill these in before running:
 PUBLIC_IP_1="<PUBLIC_IP_1>"   # Additional IP routed to remote001
-PUBLIC_IP_2="<PUBLIC_IP_2>"   # Additional IP routed to remote002
 
 # ── Dry-run support ────────────────────────────────────────────────────────────
 DRY_RUN=false
@@ -34,8 +32,8 @@ else
 fi
 
 # ── Validate placeholders ──────────────────────────────────────────────────────
-if [[ "$PUBLIC_IP_1" == "<PUBLIC_IP_1>" || "$PUBLIC_IP_2" == "<PUBLIC_IP_2>" ]]; then
-    echo "ERROR: Fill in PUBLIC_IP_1 and PUBLIC_IP_2 before running this script." >&2
+if [[ "$PUBLIC_IP_1" == "<PUBLIC_IP_1>" ]]; then
+    echo "ERROR: Fill in PUBLIC_IP_1 before running this script." >&2
     exit 1
 fi
 
@@ -77,8 +75,7 @@ ipt -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
 # ── 9. NAT: DNAT public IPs to WireGuard peer IPs ─────────────────────────────
 # Public IP #1 → remote001 (10.0.0.2)
 ipt -t nat -A PREROUTING -d "$PUBLIC_IP_1" -j DNAT --to-destination "$REMOTE001_WG_IP"
-# Public IP #2 → remote002 (10.0.0.3)
-ipt -t nat -A PREROUTING -d "$PUBLIC_IP_2" -j DNAT --to-destination "$REMOTE002_WG_IP"
+# Add more peers with: bash scripts/add-peer.sh remote002 --public-ip <IP>
 
 # ── 10. Masquerade outbound WireGuard traffic ──────────────────────────────────
 ipt -t nat -A POSTROUTING -o "$WG_INTERFACE" -j MASQUERADE
