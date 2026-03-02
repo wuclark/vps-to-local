@@ -1,0 +1,15 @@
+# Never commit WireGuard private keys or filled-in configs
+*.key
+*_private.key
+*_private*
+
+# Ignore any filled-in configs (keep only .template files)
+# To accidentally avoid committing real configs, name them without .template
+wg0.conf
+/etc/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

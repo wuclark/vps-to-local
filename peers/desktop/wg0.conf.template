@@ -1,0 +1,22 @@
+# WireGuard Client Config — Desktop
+# Place at: /etc/wireguard/wg0.conf  (Linux)
+#           or import into WireGuard app (macOS/Windows/iOS/Android)
+# Permissions: chmod 600 /etc/wireguard/wg0.conf
+#
+# Start:   wg-quick up wg0         (Linux)
+# Stop:    wg-quick down wg0       (Linux)
+# Status:  wg show
+
+[Interface]
+Address = 10.0.0.3/24
+PrivateKey = <DESKTOP_PRIVATE_KEY>
+# Optional: set DNS to avoid leaks when routing all traffic through tunnel
+# DNS = 1.1.1.1
+
+[Peer]
+PublicKey = <SERVER_PUBLIC_KEY>
+Endpoint = <VPS_MAIN_IP>:51820
+# Route all traffic through the tunnel (needed for full public IP exposure)
+AllowedIPs = 0.0.0.0/0, ::/0
+# Keep tunnel alive through NAT / when home IP changes
+PersistentKeepalive = 25
