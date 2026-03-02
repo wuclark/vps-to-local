@@ -20,6 +20,11 @@ WG_PORT="51820"
 SSH_PORT="22"
 WG_SUBNET="10.0.0.0/24"
 
+# Set TROJAN_ENABLED=true to also allow port 443 (needed when running trojan-go).
+# Run scripts/setup-trojan.sh or scripts/setup-trojan-cloudflare.sh first.
+TROJAN_ENABLED="${TROJAN_ENABLED:-false}"
+TROJAN_PORT="443"
+
 # ── Dry-run support ────────────────────────────────────────────────────────────
 DRY_RUN=false
 if [[ "${1:-}" == "--dry-run" ]]; then
@@ -64,6 +69,12 @@ ipt -A INPUT -p udp --dport "$WG_PORT" -j ACCEPT
 
 # ── 8. Allow ICMP (ping) ──────────────────────────────────────────────────────
 ipt -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+
+# ── 8a. Allow Trojan (port 443) — only when TROJAN_ENABLED=true ───────────────
+if [[ "$TROJAN_ENABLED" == "true" ]]; then
+    ipt -A INPUT -p tcp --dport "$TROJAN_PORT" -j ACCEPT
+    echo "    Trojan: port $TROJAN_PORT open (TROJAN_ENABLED=true)"
+fi
 
 # ── 9. NAT: DNAT public IPs to WireGuard peer IPs ─────────────────────────────
 # Managed by scripts/add-peer.sh — entries are inserted above this line

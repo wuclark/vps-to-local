@@ -50,6 +50,49 @@ bash scripts/add-peer.sh remote001 --public-ip <PUBLIC_IP>
 bash scripts/add-peer.sh remote002
 ```
 
+## Proxy Options
+
+In addition to WireGuard, this repo supports **Trojan** as a second proxy option.
+Trojan disguises traffic as normal HTTPS, which works through firewalls that block UDP or WireGuard.
+
+| Option | Command | Use case |
+|--------|---------|----------|
+| **WireGuard only** | `sudo bash vps/setup.sh` | Standard — fastest, lowest overhead |
+| **Trojan (standalone)** | `sudo bash scripts/setup-trojan.sh <domain> <password>` | When WireGuard UDP is blocked; domain points directly to VPS |
+| **Trojan + Cloudflare** | `sudo bash scripts/setup-trojan-cloudflare.sh <domain> <password> <cf-token>` | Hides VPS IP behind Cloudflare CDN; uses WebSocket transport |
+
+### Trojan (standalone)
+
+```
+1. Point your domain's A record at the VPS IP
+2. sudo bash scripts/setup-trojan.sh proxy.example.com <password>
+3. TROJAN_ENABLED=true sudo bash vps/iptables/rules.sh
+```
+
+Clients connect to `proxy.example.com:443` using the Trojan protocol.
+Unauthenticated requests fall through to an nginx placeholder, so the server
+looks like a normal HTTPS site to port scanners.
+
+### Trojan + Cloudflare CDN
+
+```
+1. Add domain to Cloudflare; enable orange cloud (Proxied ON)
+2. Set SSL/TLS to "Full" or "Full Strict" in Cloudflare dashboard
+3. Enable WebSocket in Cloudflare Network settings
+4. sudo bash scripts/setup-trojan-cloudflare.sh proxy.example.com <password> <cf-api-token>
+5. TROJAN_ENABLED=true sudo bash vps/iptables/rules.sh
+```
+
+Traffic flows: `Client → Cloudflare CDN → VPS (WebSocket on port 443)`.
+The Cloudflare API token only needs `Zone:DNS:Edit` permission (used for the
+Let's Encrypt DNS-01 challenge). Revoke or scope it down after setup.
+
+Config templates (for manual setup without the scripts):
+```
+vps/trojan/config.json.template              Trojan standalone
+vps/trojan-cloudflare/config.json.template   Trojan + WebSocket
+```
+
 ## Security Layers
 
 | Layer | What | Where |
@@ -64,14 +107,18 @@ bash scripts/add-peer.sh remote002
 
 ```
 vps/
-  wireguard/wg0.conf.template   WireGuard server config (no peers pre-configured)
-  iptables/rules.sh             iptables forwarding + hardening
-  setup.sh                      Full VPS bootstrap
+  wireguard/wg0.conf.template              WireGuard server config (no peers pre-configured)
+  iptables/rules.sh                        iptables forwarding + hardening (set TROJAN_ENABLED=true for port 443)
+  setup.sh                                 Full VPS bootstrap (WireGuard)
+  trojan/config.json.template              Trojan-go config template (standalone)
+  trojan-cloudflare/config.json.template   Trojan-go config template (WebSocket / Cloudflare CDN)
 peers/
   <name>/wg0.conf.template      Created by add-peer.sh (none committed by default)
 scripts/
-  gen-keys.sh                   Generate VPS server keypair
-  add-peer.sh                   Add a vpn-only or public peer
+  gen-keys.sh                         Generate VPS server keypair
+  add-peer.sh                         Add a vpn-only or public peer
+  setup-trojan.sh                     Install Trojan-go (standalone mode)
+  setup-trojan-cloudflare.sh          Install Trojan-go (Cloudflare CDN + WebSocket mode)
 ```
 
 See [CLAUDE.md](CLAUDE.md) for AI assistant conventions and development workflow.
