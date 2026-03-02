@@ -16,12 +16,12 @@ WG_INTERFACE="wg0"
 WG_PORT="51820"
 SSH_PORT="22"
 WG_SUBNET="10.0.0.0/24"
-LAPTOP_WG_IP="10.0.0.2"
-DESKTOP_WG_IP="10.0.0.3"
+REMOTE001_WG_IP="10.0.0.2"
+REMOTE002_WG_IP="10.0.0.3"
 
 # Fill these in before running:
-PUBLIC_IP_1="<PUBLIC_IP_1>"   # Additional IP routed to laptop
-PUBLIC_IP_2="<PUBLIC_IP_2>"   # Additional IP routed to desktop
+PUBLIC_IP_1="<PUBLIC_IP_1>"   # Additional IP routed to remote001
+PUBLIC_IP_2="<PUBLIC_IP_2>"   # Additional IP routed to remote002
 
 # ── Dry-run support ────────────────────────────────────────────────────────────
 DRY_RUN=false
@@ -75,10 +75,10 @@ ipt -A INPUT -p udp --dport "$WG_PORT" -j ACCEPT
 ipt -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
 
 # ── 9. NAT: DNAT public IPs to WireGuard peer IPs ─────────────────────────────
-# Public IP #1 → Laptop (10.0.0.2)
-ipt -t nat -A PREROUTING -d "$PUBLIC_IP_1" -j DNAT --to-destination "$LAPTOP_WG_IP"
-# Public IP #2 → Desktop (10.0.0.3)
-ipt -t nat -A PREROUTING -d "$PUBLIC_IP_2" -j DNAT --to-destination "$DESKTOP_WG_IP"
+# Public IP #1 → remote001 (10.0.0.2)
+ipt -t nat -A PREROUTING -d "$PUBLIC_IP_1" -j DNAT --to-destination "$REMOTE001_WG_IP"
+# Public IP #2 → remote002 (10.0.0.3)
+ipt -t nat -A PREROUTING -d "$PUBLIC_IP_2" -j DNAT --to-destination "$REMOTE002_WG_IP"
 
 # ── 10. Masquerade outbound WireGuard traffic ──────────────────────────────────
 ipt -t nat -A POSTROUTING -o "$WG_INTERFACE" -j MASQUERADE

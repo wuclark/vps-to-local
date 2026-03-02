@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Generate WireGuard keypairs for all nodes (VPS, laptop, desktop)
+# Generate WireGuard keypairs for all nodes (VPS, remote001, remote002)
 #
 # Output is printed to stdout only — nothing is written to disk.
 # Copy private keys directly to /etc/wireguard/ on each respective machine.
@@ -41,15 +41,15 @@ echo "Never commit private keys to git."
 echo ""
 
 gen_pair "VPS (server)"
-gen_pair "Laptop (peer)"
-gen_pair "Desktop (peer)"
+gen_pair "remote001 (peer)"
+gen_pair "remote002 (peer)"
 
 echo "========================================"
 echo "Next steps:"
 echo "  1. Place each private key at /etc/wireguard/ on the respective machine"
 echo "  2. chmod 600 /etc/wireguard/wg0.conf on each machine"
 echo "  3. Fill public keys into the template files:"
-echo "     vps/wireguard/wg0.conf.template   ← laptop + desktop public keys"
-echo "     peers/laptop/wg0.conf.template    ← server public key"
-echo "     peers/desktop/wg0.conf.template   ← server public key"
+echo "     vps/wireguard/wg0.conf.template     ← remote001 + remote002 public keys"
+echo "     peers/remote001/wg0.conf.template   ← server public key"
+echo "     peers/remote002/wg0.conf.template   ← server public key"
 echo "========================================"

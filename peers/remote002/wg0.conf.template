@@ -1,4 +1,4 @@
-# WireGuard Client Config — Desktop
+# WireGuard Client Config — remote002
 # Place at: /etc/wireguard/wg0.conf  (Linux)
 #           or import into WireGuard app (macOS/Windows/iOS/Android)
 # Permissions: chmod 600 /etc/wireguard/wg0.conf
@@ -9,7 +9,7 @@
 
 [Interface]
 Address = 10.0.0.3/24
-PrivateKey = <DESKTOP_PRIVATE_KEY>
+PrivateKey = <REMOTE002_PRIVATE_KEY>
 # Optional: set DNS to avoid leaks when routing all traffic through tunnel
 # DNS = 1.1.1.1
 

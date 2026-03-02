@@ -16,19 +16,19 @@ PrivateKey = <SERVER_PRIVATE_KEY>
 # PostDown = wg set wg0 fwmark 0
 
 # ─────────────────────────────────────────────
-# Peer: Laptop
+# Peer: remote001
 # WireGuard IP: 10.0.0.2
 # Mapped to public: <PUBLIC_IP_1>
 # ─────────────────────────────────────────────
 [Peer]
-PublicKey = <LAPTOP_PUBLIC_KEY>
+PublicKey = <REMOTE001_PUBLIC_KEY>
 AllowedIPs = 10.0.0.2/32
 
 # ─────────────────────────────────────────────
-# Peer: Desktop
+# Peer: remote002
 # WireGuard IP: 10.0.0.3
 # Mapped to public: <PUBLIC_IP_2>
 # ─────────────────────────────────────────────
 [Peer]
-PublicKey = <DESKTOP_PUBLIC_KEY>
+PublicKey = <REMOTE002_PUBLIC_KEY>
 AllowedIPs = 10.0.0.3/32
