@@ -4,6 +4,53 @@ Expose home machines to the internet with dedicated public IPs using an OVHcloud
 VPS as a WireGuard relay. The VPS forwards all traffic — it never terminates
 connections itself. Peers are named `remoteXXX` and added on demand.
 
+## SSH Key Setup (OVHcloud)
+
+SSH password auth is disabled by `setup.sh`, so a key must be in place before
+you run it. OVHcloud lets you inject a public key at OS-install time.
+
+**1. Generate a key pair** (skip if you already have one you want to use):
+
+```bash
+ssh-keygen -t ed25519 -C "ovh-vps" -f ~/.ssh/ovh_vps
+```
+
+This creates `~/.ssh/ovh_vps` (private) and `~/.ssh/ovh_vps.pub` (public).
+
+**2. Add the public key to OVHcloud:**
+
+- Log into [OVHcloud Control Panel](https://www.ovh.com/auth/)
+- Top-right menu → **My account** → **SSH keys** → **Add an SSH key**
+- Paste the contents of `~/.ssh/ovh_vps.pub`, give it a label, save
+
+**3. Attach the key when ordering or reinstalling the VPS:**
+
+- During VPS order: the key selection appears in the **Configure your VPS** step
+- On an existing VPS: go to **VPS** → your server → **…** → **Reinstall** →
+  select OS → check **SSH key** and pick your key
+
+OVHcloud writes the key to `~/.ssh/authorized_keys` on the new instance.
+
+**4. Connect:**
+
+```bash
+# Ubuntu image
+ssh -i ~/.ssh/ovh_vps ubuntu@<VPS_IP>
+
+# Debian image
+ssh -i ~/.ssh/ovh_vps debian@<VPS_IP>
+```
+
+Add this to `~/.ssh/config` to avoid specifying the key every time:
+
+```
+Host <VPS_IP>
+    User ubuntu
+    IdentityFile ~/.ssh/ovh_vps
+```
+
+---
+
 ## Quick Start
 
 ```
