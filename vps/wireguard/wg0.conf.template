@@ -11,17 +11,4 @@ Address = 10.0.0.1/24
 ListenPort = 51820
 PrivateKey = <SERVER_PRIVATE_KEY>
 
-# Optional: log handshakes (useful for debugging)
-# PostUp   = wg set wg0 fwmark 51820
-# PostDown = wg set wg0 fwmark 0
-
-# ─────────────────────────────────────────────
-# Peer: remote001
-# WireGuard IP: 10.0.0.2
-# Mapped to public: <PUBLIC_IP_1>
-# ─────────────────────────────────────────────
-[Peer]
-PublicKey = <REMOTE001_PUBLIC_KEY>
-AllowedIPs = 10.0.0.2/32
-
-# Add more peers with: bash scripts/add-peer.sh remote002 --public-ip <IP>
+# Peers are added below by: bash scripts/add-peer.sh <name> [--public-ip <IP>]

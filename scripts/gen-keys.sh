@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# Generate WireGuard keypairs for the initial nodes (VPS + remote001)
+# Generate a WireGuard keypair for the VPS server
 #
 # Output is printed to stdout only — nothing is written to disk.
-# Copy private keys directly to /etc/wireguard/ on each respective machine.
-# Public keys go into the peer's [Peer] block.
+# Place the private key at /etc/wireguard/ on the VPS.
+# The public key goes into each peer's [Peer] block.
+#
+# For peer keypairs, run this on each peer machine directly:
+#   wg genkey | tee /etc/wireguard/private.key | wg pubkey
 #
 # Usage:
 #   bash scripts/gen-keys.sh
@@ -20,37 +23,25 @@ if ! command -v wg &>/dev/null; then
     exit 1
 fi
 
-gen_pair() {
-    local name="$1"
-    local priv pub
-    priv=$(wg genkey)
-    pub=$(echo "$priv" | wg pubkey)
-    echo "## $name"
-    echo "Private key (keep secret, goes in [Interface] PrivateKey): $priv"
-    echo "Public key  (share freely, goes in peer's [Peer] PublicKey): $pub"
-    echo ""
-}
+priv=$(wg genkey)
+pub=$(echo "$priv" | wg pubkey)
 
 echo "========================================"
-echo " WireGuard Keypair Generator"
+echo " WireGuard Server Keypair"
 echo " Generated: $(date -u '+%Y-%m-%d %H:%M UTC')"
 echo "========================================"
 echo ""
-echo "IMPORTANT: Store private keys securely."
-echo "Never commit private keys to git."
+echo "Private key (keep secret — place at /etc/wireguard/private.key on VPS):"
+echo "  $priv"
 echo ""
-
-gen_pair "VPS (server)"
-gen_pair "remote001 (peer)"
-
+echo "Public key (goes in each peer's [Peer] PublicKey field):"
+echo "  $pub"
+echo ""
 echo "========================================"
 echo "Next steps:"
-echo "  1. Place each private key at /etc/wireguard/ on the respective machine"
-echo "  2. chmod 600 /etc/wireguard/wg0.conf on each machine"
-echo "  3. Fill public keys into the template files:"
-echo "     vps/wireguard/wg0.conf.template    ← remote001 public key"
-echo "     peers/remote001/wg0.conf.template  ← server public key"
-echo ""
-echo "  To add more peers later:"
-echo "     bash scripts/add-peer.sh remote002 --public-ip <IP>"
+echo "  1. Fill <SERVER_PRIVATE_KEY> in vps/wireguard/wg0.conf.template"
+echo "  2. chmod 600 /etc/wireguard/wg0.conf on VPS"
+echo "  3. Add peers:"
+echo "     bash scripts/add-peer.sh remote001 --public-ip <IP>  # publicly reachable"
+echo "     bash scripts/add-peer.sh remote001                   # VPN client only"
 echo "========================================"

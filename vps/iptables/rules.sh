@@ -8,6 +8,9 @@
 # After applying, persist with:
 #   apt install iptables-persistent
 #   netfilter-persistent save
+#
+# DNAT rules (section 9 below) are managed by scripts/add-peer.sh.
+# Re-run this script after adding peers with --public-ip to apply new rules.
 
 set -euo pipefail
 
@@ -16,10 +19,6 @@ WG_INTERFACE="wg0"
 WG_PORT="51820"
 SSH_PORT="22"
 WG_SUBNET="10.0.0.0/24"
-REMOTE001_WG_IP="10.0.0.2"
-
-# Fill these in before running:
-PUBLIC_IP_1="<PUBLIC_IP_1>"   # Additional IP routed to remote001
 
 # ── Dry-run support ────────────────────────────────────────────────────────────
 DRY_RUN=false
@@ -29,12 +28,6 @@ if [[ "${1:-}" == "--dry-run" ]]; then
     echo "=== DRY RUN — rules will not be applied ==="
 else
     ipt() { iptables "$@"; }
-fi
-
-# ── Validate placeholders ──────────────────────────────────────────────────────
-if [[ "$PUBLIC_IP_1" == "<PUBLIC_IP_1>" ]]; then
-    echo "ERROR: Fill in PUBLIC_IP_1 before running this script." >&2
-    exit 1
 fi
 
 echo "Applying iptables rules..."
@@ -73,9 +66,7 @@ ipt -A INPUT -p udp --dport "$WG_PORT" -j ACCEPT
 ipt -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
 
 # ── 9. NAT: DNAT public IPs to WireGuard peer IPs ─────────────────────────────
-# Public IP #1 → remote001 (10.0.0.2)
-ipt -t nat -A PREROUTING -d "$PUBLIC_IP_1" -j DNAT --to-destination "$REMOTE001_WG_IP"
-# Add more peers with: bash scripts/add-peer.sh remote002 --public-ip <IP>
+# Managed by scripts/add-peer.sh — entries are inserted above this line
 
 # ── 10. Masquerade outbound WireGuard traffic ──────────────────────────────────
 ipt -t nat -A POSTROUTING -o "$WG_INTERFACE" -j MASQUERADE

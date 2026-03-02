@@ -2,17 +2,17 @@
 
 Expose home machines to the internet with dedicated public IPs using an OVHcloud
 VPS as a WireGuard relay. The VPS forwards all traffic — it never terminates
-connections itself. Peers are named `remoteXXX` for consistency.
+connections itself. Peers are named `remoteXXX` and added on demand.
 
 ## Quick Start
 
 ```
-1. Order VPS + 1 Additional IP on OVHcloud (US/EU datacenter)
-2. bash scripts/gen-keys.sh        # generate keypairs (VPS + remote001)
-3. Fill in templates under vps/ and peers/
+1. Order VPS on OVHcloud (US/EU datacenter)
+2. bash scripts/gen-keys.sh        # generate VPS server keypair
+3. Fill <SERVER_PRIVATE_KEY> into vps/wireguard/wg0.conf.template
 4. sudo bash vps/setup.sh          # bootstrap VPS
-5. sudo bash vps/iptables/rules.sh # apply forwarding rules
-6. Configure WireGuard on remote001 (see peers/remote001/)
+5. bash scripts/add-peer.sh <name> [--public-ip <IP>]  # add peers
+6. sudo bash vps/iptables/rules.sh # apply forwarding rules
 ```
 
 ## Architecture
@@ -21,20 +21,33 @@ connections itself. Peers are named `remoteXXX` for consistency.
 Internet
     │
     ▼
-OVHcloud VPS  (~$12/mo to start)
-├── VPS main IP  ──► SSH + WireGuard endpoint  (stays on VPS, included free)
-└── Public IP #1 ──► DNAT ──► remote001  (10.0.0.2)
+OVHcloud VPS
+├── VPS main IP  ──► SSH + WireGuard endpoint  (always on VPS, included free)
+├── Public IP    ──► DNAT ──► remoteXXX  (public peer, ~$2/mo each)
+└── (no extra IP)──► WireGuard only ──► remoteYYY  (VPN client, free)
 ```
 
-**Baseline: 2 IPs for 1 remote.** Add more peers with `scripts/add-peer.sh` —
-each needs one additional IP (~$2/mo) if it requires its own public address.
-The VPS main IP is never DNAT'd, so SSH and WireGuard handshakes always reach
-the VPS directly.
+**The VPS main IP is never DNAT'd** — SSH and WireGuard handshakes always reach
+the VPS directly regardless of how many peers are configured.
 
-## Adding More Peers
+## Peer Modes
+
+| Mode | Command | Cost | Use case |
+|------|---------|------|----------|
+| **public** | `add-peer.sh <name> --public-ip <IP>` | +~$2/mo | home server, desktop |
+| **vpn-only** | `add-peer.sh <name>` | free | phone, laptop, VPN access |
+
+Public peers get all traffic DNAT'd from a dedicated IP (`AllowedIPs = 0.0.0.0/0`).
+VPN-only peers can only reach the WireGuard subnet (`AllowedIPs = 10.0.0.0/24`).
+
+## Adding Peers
 
 ```bash
-bash scripts/add-peer.sh remote002 --public-ip <PUBLIC_IP_2>
+# Publicly reachable (order an Additional IP from OVHcloud first)
+bash scripts/add-peer.sh remote001 --public-ip <PUBLIC_IP>
+
+# VPN client only (no extra IP needed)
+bash scripts/add-peer.sh remote002
 ```
 
 ## Security Layers
@@ -51,14 +64,14 @@ bash scripts/add-peer.sh remote002 --public-ip <PUBLIC_IP_2>
 
 ```
 vps/
-  wireguard/wg0.conf.template   WireGuard server config (VPS)
+  wireguard/wg0.conf.template   WireGuard server config (no peers pre-configured)
   iptables/rules.sh             iptables forwarding + hardening
   setup.sh                      Full VPS bootstrap
 peers/
-  remote001/wg0.conf.template   WireGuard client (remote001, 10.0.0.2)
+  <name>/wg0.conf.template      Created by add-peer.sh (none committed by default)
 scripts/
-  gen-keys.sh                   Generate WireGuard keypairs (VPS + remote001)
-  add-peer.sh                   Add a new remoteXXX peer
+  gen-keys.sh                   Generate VPS server keypair
+  add-peer.sh                   Add a vpn-only or public peer
 ```
 
 See [CLAUDE.md](CLAUDE.md) for AI assistant conventions and development workflow.

@@ -8,6 +8,7 @@ The VPS forwards traffic from dedicated public IPs to each home machine through
 encrypted tunnels — no home machine is ever directly reachable.
 
 Peers are named `remoteXXX` (e.g. `remote001`, `remote002`) — not by device type.
+The repo ships with no peers pre-configured; all peers are added via `scripts/add-peer.sh`.
 
 ---
 
@@ -18,32 +19,39 @@ Internet
     │
     ▼
 OVHcloud VPS
-├── VPS main IP   ──► SSH (port 22) + WireGuard endpoint (port 51820)
-└── Public IP #1  ──► DNAT ──► remote001  (10.0.0.2)
+├── VPS main IP        ──► SSH (port 22) + WireGuard endpoint (port 51820)
+├── Public IP #1       ──► DNAT ──► remoteXXX  (publicly reachable peer)
+└── (no additional IP) ──► WireGuard only ──► remoteYYY  (VPN client peer)
 ```
 
+### Peer Modes
+
+Peers come in two modes, selected when running `add-peer.sh`:
+
+| Mode | Command | `AllowedIPs` on client | DNAT rule | Use case |
+|------|---------|----------------------|-----------|----------|
+| **public** | `add-peer.sh <name> --public-ip <IP>` | `0.0.0.0/0` | yes | expose a home server |
+| **vpn-only** | `add-peer.sh <name>` | `10.0.0.0/24` | no | phone, laptop, VPN access |
+
 ### IP Allocation
-**N remotes require N+1 public IPs total.** The baseline is 2 IPs for 1 remote.
+**Only public-mode peers need an additional IP.** VPN-only peers use no extra IP.
 
 | IP | Role | Cost |
 |----|------|------|
-| VPS main IP | SSH access + WireGuard handshakes — never DNAT'd | included |
-| Additional IP #1 | All traffic forwarded to remote001 | ~$2/mo |
+| VPS main IP | SSH + WireGuard handshakes — never DNAT'd | included |
+| Additional IP (per public peer) | All traffic DNAT'd to that peer | ~$2/mo each |
 
-The DNAT rules in `rules.sh` match only on their specific additional IP
-(`-d "$PUBLIC_IP_1"`), so the VPS main IP passes through the PREROUTING
-chain untouched. SSH and WireGuard handshakes always reach the VPS directly.
-
-Additional peers are added with `scripts/add-peer.sh` — each needs one more
-additional IP if it requires its own public address.
+DNAT rules match only on their specific additional IP, so the VPS main IP is
+never forwarded and always reachable for administration.
 
 **WireGuard subnet:** `10.0.0.0/24`
-| Host      | WireGuard IP |
-|-----------|-------------|
-| VPS       | 10.0.0.1    |
-| remote001 | 10.0.0.2    |
+| Host | WireGuard IP |
+|------|-------------|
+| VPS  | 10.0.0.1    |
+| first peer | 10.0.0.2 |
+| second peer | 10.0.0.3 |
 
-New peers continue the sequence: `remote002` → `10.0.0.3`, `remote003` → `10.0.0.4`, etc.
+Peers are auto-assigned IPs starting at `.2`, incrementing by one each time.
 
 ---
 
@@ -60,12 +68,11 @@ vps-to-local/
 │   │   └── rules.sh             # iptables forwarding + hardening rules
 │   └── setup.sh                 # Full VPS bootstrap script
 ├── peers/
-│   ├── remote001/
-│   │   └── wg0.conf.template    # WireGuard client config for remote001
-│   └── remoteXXX/               # Add more with: bash scripts/add-peer.sh remoteXXX
+│   └── <name>/                  # Created by: bash scripts/add-peer.sh <name>
+│       └── wg0.conf.template    # WireGuard client config (no peers pre-committed)
 └── scripts/
-    ├── gen-keys.sh              # Generate WireGuard keypairs (VPS + remote001)
-    └── add-peer.sh              # Add a new remoteXXX peer
+    ├── gen-keys.sh              # Generate VPS server keypair
+    └── add-peer.sh              # Add a peer (vpn-only or public)
 ```
 
 ---
@@ -82,16 +89,20 @@ vps-to-local/
 All templates use `<PLACEHOLDER>` syntax. Never substitute real keys or IPs
 into committed files. Placeholders that appear in this repo:
 
-| Placeholder              | Meaning                                        |
-|--------------------------|------------------------------------------------|
-| `<VPS_MAIN_IP>`          | VPS primary IP (used as WireGuard endpoint)    |
-| `<PUBLIC_IP_1>`          | Additional OVHcloud IP routed to remote001     |
-| `<SERVER_PRIVATE_KEY>`   | VPS WireGuard private key (never commit)       |
-| `<SERVER_PUBLIC_KEY>`    | VPS WireGuard public key                       |
-| `<REMOTE001_PRIVATE_KEY>`| remote001 WireGuard private key (never commit) |
-| `<REMOTE001_PUBLIC_KEY>` | remote001 WireGuard public key                 |
+| Placeholder              | Meaning                                           |
+|--------------------------|---------------------------------------------------|
+| `<VPS_MAIN_IP>`          | VPS primary IP (used as WireGuard endpoint)       |
+| `<SERVER_PRIVATE_KEY>`   | VPS WireGuard private key (never commit)          |
+| `<SERVER_PUBLIC_KEY>`    | VPS WireGuard public key                          |
+| `<NAME_PRIVATE_KEY>`     | Peer private key — NAME uppercased (never commit) |
+| `<NAME_PUBLIC_KEY>`      | Peer public key — NAME uppercased                 |
 
-Additional peers follow the same pattern: `<REMOTE002_PRIVATE_KEY>`, `<REMOTE002_PUBLIC_KEY>`, etc.
+Placeholder names are derived from the peer name by `add-peer.sh`:
+e.g. peer `remote001` → `<REMOTE001_PRIVATE_KEY>`, `<REMOTE001_PUBLIC_KEY>`
+e.g. peer `raspberry-pi` → `<RASPBERRY_PI_PRIVATE_KEY>`, `<RASPBERRY_PI_PUBLIC_KEY>`
+
+Public IPs are written as literals into `rules.sh` by `add-peer.sh` — never as
+placeholders, since they are real values filled in at commit time.
 
 ### Security Rules
 - **Never commit private keys** — they belong in `/etc/wireguard/` on each machine
@@ -102,16 +113,15 @@ Additional peers follow the same pattern: `<REMOTE002_PRIVATE_KEY>`, `<REMOTE002
 ### Adding a New Peer
 Use the provided script — it handles IP assignment, template creation, and patching automatically:
 ```bash
-bash scripts/add-peer.sh remote003
-bash scripts/add-peer.sh remote003 --public-ip <PUBLIC_IP_3>
+# VPN client only (phone, laptop — no public IP needed):
+bash scripts/add-peer.sh remote001
+
+# Publicly reachable server (home desktop, NAS, etc.):
+bash scripts/add-peer.sh remote001 --public-ip <PUBLIC_IP>
 ```
 
-Manual steps (if not using the script):
-1. Generate keypair on the new machine: `wg genkey | tee private.key | wg pubkey > public.key`
-2. Assign the next available WireGuard IP (10.0.0.4 for remote003, etc.)
-3. Add a `[Peer]` block to `vps/wireguard/wg0.conf.template`
-4. Add an iptables DNAT rule in `vps/iptables/rules.sh` if a dedicated public IP is needed
-5. Create `peers/remote003/wg0.conf.template`
+The script sets `AllowedIPs` appropriately for each mode and only adds a DNAT
+rule to `rules.sh` when `--public-ip` is given.
 
 ### WireGuard Reload (no downtime)
 ```bash
@@ -167,12 +177,13 @@ bash /tmp/rules.sh
 
 ## Cost Reference
 
-| Item                      | Cost/mo |
-|---------------------------|---------|
-| OVHcloud VPS-2            | ~$9.99  |
-| Additional IP (remote001) | ~$2.00  |
-| **Total (1 peer)**        | **~$12**|
+| Item | Cost/mo |
+|------|---------|
+| OVHcloud VPS-2 | ~$9.99 |
+| Additional IP (per public peer) | ~$2.00 |
+| **Minimum (VPS only, no peers)** | **~$10** |
+| **With 1 public peer** | **~$12** |
 
-Each additional peer costs ~$2/mo more if it needs its own public IP.
+VPN-only peers cost nothing extra — they share the VPS main IP via WireGuard.
 
 > US/EU datacenters only for unlimited bandwidth. Avoid AP datacenters.
