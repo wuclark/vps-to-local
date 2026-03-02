@@ -28,7 +28,7 @@ apt-get update -qq
 apt-get upgrade -y -qq
 
 echo "==> Installing required packages..."
-apt-get install -y -qq wireguard fail2ban iptables-persistent ufw-less curl
+apt-get install -y -qq wireguard fail2ban iptables-persistent curl
 
 echo "==> Enabling IP forwarding..."
 grep -q '^net.ipv4.ip_forward=1' /etc/sysctl.conf \
@@ -38,12 +38,22 @@ grep -q '^net.ipv6.conf.all.forwarding=1' /etc/sysctl.conf \
 sysctl -p
 
 echo "==> Hardening SSH (disabling password auth)..."
-SSHD_CFG="/etc/ssh/sshd_config"
-# Only modify if not already set
-sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' "$SSHD_CFG"
-sed -i 's/^#*ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' "$SSHD_CFG"
-sed -i 's/^#*UsePAM.*/UsePAM no/' "$SSHD_CFG"
-systemctl reload sshd
+# Write a drop-in rather than patching sshd_config directly.
+# Ubuntu 22.04+ uses Include /etc/ssh/sshd_config.d/*.conf and the main file
+# may not contain these keys at all. Drop-ins also survive OS upgrades.
+# KbdInteractiveAuthentication replaces ChallengeResponseAuthentication in
+# OpenSSH 8.7+ (Ubuntu 24.04 ships OpenSSH 9.6).
+# UsePAM must stay yes on Ubuntu — PAM handles session setup and MOTD.
+SSHD_DROP_IN="/etc/ssh/sshd_config.d/99-hardening.conf"
+mkdir -p /etc/ssh/sshd_config.d
+cat > "$SSHD_DROP_IN" <<EOF
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+UsePAM yes
+EOF
+chmod 600 "$SSHD_DROP_IN"
+# Ubuntu names the unit 'ssh'; fall back to 'sshd' for non-Ubuntu distros
+systemctl reload ssh 2>/dev/null || systemctl reload sshd
 echo "    SSH: password auth disabled. Ensure your public key is in ~/.ssh/authorized_keys!"
 
 echo "==> Enabling Fail2Ban..."

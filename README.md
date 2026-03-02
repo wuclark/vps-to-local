@@ -49,6 +49,11 @@ Host <VPS_IP>
     IdentityFile ~/.ssh/ovh_vps
 ```
 
+> **Ubuntu 24.04 note:** `setup.sh` writes SSH hardening to
+> `/etc/ssh/sshd_config.d/99-hardening.conf` (a drop-in) rather than
+> editing `sshd_config` directly. This is compatible with Ubuntu 22.04 and
+> 24.04's include-based config layout and survives OS upgrades.
+
 ---
 
 ## Quick Start
