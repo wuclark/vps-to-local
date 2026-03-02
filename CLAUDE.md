@@ -17,10 +17,24 @@ Peers are named `remoteXXX` (e.g. `remote001`, `remote002`) — not by device ty
 Internet
     │
     ▼
-OVHcloud VPS  (relay only — no services run here)
-├── Public IP #1  ──► WireGuard ──► remote001  (10.0.0.2)
-└── Public IP #2  ──► WireGuard ──► remote002  (10.0.0.3)
+OVHcloud VPS
+├── VPS main IP   ──► SSH (port 22) + WireGuard endpoint (port 51820)
+├── Public IP #1  ──► DNAT ──► remote001  (10.0.0.2)
+└── Public IP #2  ──► DNAT ──► remote002  (10.0.0.3)
 ```
+
+### IP Allocation
+**N remotes require N+1 public IPs total.**
+
+| IP | Role | Cost |
+|----|------|------|
+| VPS main IP | SSH access + WireGuard handshakes — never DNAT'd | included |
+| Additional IP #1 | All traffic forwarded to remote001 | ~$2/mo |
+| Additional IP #2 | All traffic forwarded to remote002 | ~$2/mo |
+
+The DNAT rules in `rules.sh` match only on their specific additional IP
+(`-d "$PUBLIC_IP_1"`), so the VPS main IP passes through the PREROUTING
+chain untouched. SSH and WireGuard handshakes always reach the VPS directly.
 
 **WireGuard subnet:** `10.0.0.0/24`
 | Host      | WireGuard IP |

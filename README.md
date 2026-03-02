@@ -21,10 +21,17 @@ connections itself. Peers are named `remoteXXX` for consistency.
 Internet
     │
     ▼
-OVHcloud VPS  ($9.99/mo + $2/mo per extra IP)
-├── Public IP #1  ──► WireGuard ──► remote001  (10.0.0.2)
-└── Public IP #2  ──► WireGuard ──► remote002  (10.0.0.3)
+OVHcloud VPS
+├── VPS main IP   ──► SSH + WireGuard endpoint  (stays on VPS)
+├── Public IP #1  ──► DNAT ──► remote001  (10.0.0.2)
+└── Public IP #2  ──► DNAT ──► remote002  (10.0.0.3)
 ```
+
+**IP count: N remotes require N+1 IPs total.**
+The VPS main IP (included free) handles SSH and WireGuard handshakes.
+Each additional IP (~$2/mo) is DNAT'd entirely to one remote peer.
+DNAT rules match only on their specific additional IP, so the main IP
+is never forwarded and always reachable for administration.
 
 ## Adding More Peers
 
