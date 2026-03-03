@@ -108,6 +108,81 @@ bash scripts/add-peer.sh remote001 --public-ip <PUBLIC_IP>
 bash scripts/add-peer.sh remote002
 ```
 
+## Setting Up a Peer Machine
+
+After running `add-peer.sh`, you have a `peers/<name>/wg0.conf.template` with
+placeholders. Complete it, then import it on the peer machine.
+
+### Step 1 — Generate a keypair on the peer machine
+
+**Linux / macOS:**
+```bash
+wg genkey | tee ~/wg-private.key | wg pubkey
+# Prints the public key to stdout; private key is saved to ~/wg-private.key
+chmod 600 ~/wg-private.key
+```
+
+**Windows** (in the WireGuard app): skip this step — the app generates keys
+automatically when you create a new tunnel. Copy the public key from the app
+and use it in step 2.
+
+### Step 2 — Fill in the template
+
+Open `peers/<name>/wg0.conf.template` and replace the three placeholders:
+
+| Placeholder | Value |
+|-------------|-------|
+| `<REMOTEXXX_PRIVATE_KEY>` | Private key from step 1 |
+| `<SERVER_PUBLIC_KEY>` | Public key printed by `scripts/gen-keys.sh` |
+| `<VPS_MAIN_IP>` | Your VPS primary IP address |
+
+Save the completed file as `wg0.conf` (drop the `.template` extension).
+
+> **Keep this file safe** — it contains the private key. Never commit it.
+
+### Step 3 — Tell the VPS about this peer
+
+Fill `<REMOTEXXX_PUBLIC_KEY>` in `vps/wireguard/wg0.conf.template` with the
+public key from step 1, then live-reload WireGuard on the VPS (no downtime):
+
+```bash
+ssh ubuntu@<VPS_IP>
+sudo wg syncconf wg0 <(sudo wg-quick strip wg0)
+```
+
+### Step 4 — Import the tunnel on the peer machine
+
+**Linux:**
+```bash
+sudo cp wg0.conf /etc/wireguard/wg0.conf
+sudo chmod 600 /etc/wireguard/wg0.conf
+sudo systemctl enable wg-quick@wg0 --now   # start now + on boot
+sudo wg show                                # verify handshake
+```
+
+**macOS** (WireGuard app from the App Store):
+```
+File → Import tunnel(s) from file → select wg0.conf
+```
+Click Activate to connect.
+
+**Windows** (WireGuard app from wireguard.com):
+```
+Add Tunnel → Import tunnel(s) from file → select wg0.conf
+```
+Click Activate to connect. To auto-start: check "Launch WireGuard on startup"
+and set the tunnel to connect automatically via the tray icon menu.
+
+**iOS / Android** — generate a QR code instead of transferring the file:
+```bash
+# Install qrencode first: apt install qrencode  or  brew install qrencode
+qrencode -t ansiutf8 < wg0.conf
+```
+Open the WireGuard app → **+** → **Scan QR code**. Delete `wg0.conf` from
+your local machine after scanning.
+
+---
+
 ## Proxy Options
 
 In addition to WireGuard, this repo supports **Trojan** as a second proxy option.
