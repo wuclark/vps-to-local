@@ -126,19 +126,16 @@ chmod 600 ~/wg-private.key
 automatically when you create a new tunnel. Copy the public key from the app
 and use it in step 2.
 
-### Step 2 — Fill in the template
+### Step 2 — Generate `wg0.conf` from the template
 
-Open `peers/<name>/wg0.conf.template` and replace the three placeholders:
+```bash
+bash scripts/gen-peer-conf.sh <name> ~/wg-private.key <SERVER_PUBLIC_KEY> <VPS_MAIN_IP>
+```
 
-| Placeholder | Value |
-|-------------|-------|
-| `<REMOTEXXX_PRIVATE_KEY>` | Private key from step 1 |
-| `<SERVER_PUBLIC_KEY>` | Public key printed by `scripts/gen-keys.sh` |
-| `<VPS_MAIN_IP>` | Your VPS primary IP address |
+This reads the private key from a file (so it never appears in your shell history),
+substitutes all three placeholders, and writes `peers/<name>/wg0.conf` with `chmod 600`.
 
-Save the completed file as `wg0.conf` (drop the `.template` extension).
-
-> **Keep this file safe** — it contains the private key. Never commit it.
+> `wg0.conf` is gitignored — it will never be committed. Keep the file safe; it contains the private key.
 
 ### Step 3 — Tell the VPS about this peer
 
@@ -268,6 +265,7 @@ scripts/
   setup.sh                            Interactive setup wizard (WireGuard / Trojan / Trojan+CF) — run on VPS
   gen-keys.sh                         Generate VPS server keypair
   add-peer.sh                         Add a vpn-only or public peer
+  gen-peer-conf.sh                    Generate peers/<name>/wg0.conf from the template (gitignored)
   switch-mode.sh                      Upgrade/downgrade between proxy modes on a live VPS
   setup-trojan.sh                     Install Trojan-go (standalone mode, called by wizard)
   setup-trojan-cloudflare.sh          Install Trojan-go (Cloudflare CDN + WebSocket, called by wizard)

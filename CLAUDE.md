@@ -74,6 +74,7 @@ vps-to-local/
     ├── install-deps.sh          # Install local prerequisites (wireguard-tools) — run on your machine
     ├── gen-keys.sh              # Generate VPS server keypair
     ├── add-peer.sh              # Add a peer (vpn-only or public)
+    ├── gen-peer-conf.sh         # Generate peers/<name>/wg0.conf from template (gitignored)
     ├── setup.sh                 # Interactive VPS setup wizard (WireGuard / Trojan / Trojan+CF)
     ├── setup-trojan.sh          # Install Trojan-go standalone (called by setup.sh)
     ├── setup-trojan-cloudflare.sh  # Install Trojan-go + Cloudflare (called by setup.sh)
