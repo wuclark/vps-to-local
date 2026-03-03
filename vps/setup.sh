@@ -76,7 +76,7 @@ fi
 
 echo ""
 echo "==> Next: apply iptables rules"
-echo "    Edit vps/iptables/rules.sh (fill in PUBLIC_IP_1, PUBLIC_IP_2)"
-echo "    Then run: sudo bash vps/iptables/rules.sh"
+echo "    Run: sudo bash vps/iptables/rules.sh"
+echo "    (DNAT rules for public peers are added automatically by scripts/add-peer.sh)"
 echo ""
 echo "==> Bootstrap complete."
