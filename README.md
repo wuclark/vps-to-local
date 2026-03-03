@@ -99,7 +99,7 @@ Host <VPS_IP>
 ## Quick Start
 
 ```
-[local machine]
+[your workstation — where you cloned this repo]
 1. bash scripts/install-deps.sh         # install wireguard-tools
 2. bash scripts/gen-keys.sh             # generate VPS server keypair — note both keys
 
@@ -111,7 +111,7 @@ Host <VPS_IP>
 4. sudo bash scripts/setup.sh          # interactive wizard: WireGuard / Trojan / Trojan+CF
                                         # fills /etc/wireguard/wg0.conf from your input
 
-[local machine]
+[your workstation — where you cloned this repo]
 5. bash scripts/add-peer.sh <name> [--public-ip <IP>]   # register a peer in the templates
 6. bash scripts/gen-peer-conf.sh ...                     # generate the peer's tunnel config
                                                           # (see "Setting Up a Peer Machine")
