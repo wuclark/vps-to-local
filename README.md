@@ -59,8 +59,14 @@ Host <VPS_IP>
 ## Quick Start
 
 ```
-1. Order VPS on OVHcloud (US/EU datacenter)
+# On your local machine:
+1. bash scripts/install-deps.sh    # install wireguard-tools (wg command)
 2. bash scripts/gen-keys.sh        # generate VPS server keypair
+
+# On OVHcloud — order a VPS (US/EU datacenter, Ubuntu 24.04)
+# See "SSH Key Setup" above to inject your public key at install time
+
+# Back on your local machine (or directly on the VPS over SSH):
 3. Fill <SERVER_PRIVATE_KEY> into vps/wireguard/wg0.conf.template
 4. sudo bash scripts/setup.sh      # interactive wizard — picks WireGuard,
                                    # Trojan, or Trojan+Cloudflare
@@ -170,9 +176,11 @@ vps/
 peers/
   <name>/wg0.conf.template      Created by add-peer.sh (none committed by default)
 scripts/
-  setup.sh                            Interactive setup wizard (WireGuard / Trojan / Trojan+CF)
+  install-deps.sh                     Install local prerequisites (wireguard-tools) — run once on your machine
+  setup.sh                            Interactive setup wizard (WireGuard / Trojan / Trojan+CF) — run on VPS
   gen-keys.sh                         Generate VPS server keypair
   add-peer.sh                         Add a vpn-only or public peer
+  switch-mode.sh                      Upgrade/downgrade between proxy modes on a live VPS
   setup-trojan.sh                     Install Trojan-go (standalone mode, called by wizard)
   setup-trojan-cloudflare.sh          Install Trojan-go (Cloudflare CDN + WebSocket, called by wizard)
 ```

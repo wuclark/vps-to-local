@@ -71,8 +71,13 @@ vps-to-local/
 │   └── <name>/                  # Created by: bash scripts/add-peer.sh <name>
 │       └── wg0.conf.template    # WireGuard client config (no peers pre-committed)
 └── scripts/
+    ├── install-deps.sh          # Install local prerequisites (wireguard-tools) — run on your machine
     ├── gen-keys.sh              # Generate VPS server keypair
-    └── add-peer.sh              # Add a peer (vpn-only or public)
+    ├── add-peer.sh              # Add a peer (vpn-only or public)
+    ├── setup.sh                 # Interactive VPS setup wizard (WireGuard / Trojan / Trojan+CF)
+    ├── setup-trojan.sh          # Install Trojan-go standalone (called by setup.sh)
+    ├── setup-trojan-cloudflare.sh  # Install Trojan-go + Cloudflare (called by setup.sh)
+    └── switch-mode.sh           # Upgrade/downgrade between proxy modes on a live VPS
 ```
 
 ---
@@ -143,6 +148,15 @@ Rules in `rules.sh` must be applied in this order:
 ---
 
 ## Development Workflow
+
+### Local Prerequisites
+Before running any script that calls `wg`, install wireguard-tools on your
+local machine (not the VPS — the VPS gets its deps from `vps/setup.sh`):
+
+```bash
+bash scripts/install-deps.sh
+# Supports: Ubuntu/Debian, Fedora/RHEL, Arch, macOS (Homebrew)
+```
 
 ### Testing Changes Locally
 Scripts are designed to be idempotent (safe to re-run). Test on a throw-away
