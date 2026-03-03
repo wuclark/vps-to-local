@@ -143,10 +143,23 @@ Save the completed file as `wg0.conf` (drop the `.template` extension).
 ### Step 3 — Tell the VPS about this peer
 
 Fill `<REMOTEXXX_PUBLIC_KEY>` in `vps/wireguard/wg0.conf.template` with the
-public key from step 1, then live-reload WireGuard on the VPS (no downtime):
+public key from step 1, then apply it on the VPS:
 
 ```bash
+scp vps/wireguard/wg0.conf.template ubuntu@<VPS_IP>:/tmp/wg0.conf
 ssh ubuntu@<VPS_IP>
+# Fill in real keys/IPs, then place the file:
+sudo cp /tmp/wg0.conf /etc/wireguard/wg0.conf
+sudo chmod 600 /etc/wireguard/wg0.conf
+```
+
+**If WireGuard is not running yet** (first peer / fresh VPS):
+```bash
+sudo systemctl enable wg-quick@wg0 --now
+```
+
+**If WireGuard is already running** (adding a subsequent peer, no downtime):
+```bash
 sudo wg syncconf wg0 <(sudo wg-quick strip wg0)
 ```
 
